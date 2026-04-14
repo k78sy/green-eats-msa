@@ -18,7 +18,6 @@ import org.springframework.web.bind.annotation.RestController;
 @Slf4j
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/api/user")
 public class UserController {
     private final UserService userService;
     private final JwtTokenManager jwtTokenManager;
@@ -39,7 +38,7 @@ public class UserController {
         User signedUser = userService.signin(req);
 
         // 보안 쿠키 처리
-        JwtUser jwtUser = new JwtUser( signedUser.getId(), signedUser.getName() );
+        JwtUser jwtUser = new JwtUser( signedUser.getId(), signedUser.getName(), signedUser.getEnumUserRole() );
         jwtTokenManager.issue( res, jwtUser );
 
         UserSigninRes userSigninRes = UserSigninRes.builder()

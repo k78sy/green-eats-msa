@@ -2,6 +2,7 @@ package com.green.eats.auth.application;
 
 import com.green.eats.auth.application.model.UserSigninReq;
 import com.green.eats.auth.application.model.UserSignupReq;
+import com.green.eats.auth.application.model.UserUpdateReq;
 import com.green.eats.auth.entity.User;
 import com.green.eats.common.constants.UserEventType;
 import com.green.eats.common.model.UserEvent;
@@ -37,13 +38,14 @@ public class UserService {
 
         userRepository.save(newUser);
 
-
+        // 카프카(집배원)에게 신호를 보내는 셈...
         UserEvent userEvent = UserEvent.builder()
                 .userId( newUser.getId() )
                 .name( newUser.getName() )
                 .eventType( UserEventType.CREATE )
                 .build();
 
+        // 카프카..에게  이 통신의 이름.unique.보내는값 담아 콜백 함수
         kafkaTemplate.send("user-topic", String.valueOf(newUser.getId()), userEvent)
                 .whenComplete((result, ex) -> {
                     if (ex == null) {
@@ -70,5 +72,31 @@ public class UserService {
 
     private void noFoundUser(){
         throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "아이디, 비밀번호를 확인해 주세요.");
+    }
+
+
+    public void update(Long id, UserUpdateReq req){
+        User res = userRepository.findById( id ).orElseThrow();
+        res.setName(req.getName());
+        userRepository.save( res );
+
+        UserEvent userEvent = UserEvent.builder()
+                .userId( res.getId() )
+                .name( res.getName() )
+                .eventType( UserEventType.UPDATE )
+                .build();
+
+        kafkaTemplate.send("user-topic", String.valueOf(res.getId()), userEvent)
+                .whenComplete((result, ex) -> {
+                    if (ex == null) {
+                        // 성공 시 로그
+                        log.info("✅ [Kafka Success] Topic: {}, Offset: {}",
+                                result.getRecordMetadata().topic(),
+                                result.getRecordMetadata().offset());
+                    } else {
+                        // 실패 시 로그
+                        log.error("❌ [Kafka Failure] 원인: {}", ex.getMessage());
+                    }
+                });
     }
 }

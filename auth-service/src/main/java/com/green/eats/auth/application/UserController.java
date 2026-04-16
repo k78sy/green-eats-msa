@@ -3,17 +3,17 @@ package com.green.eats.auth.application;
 import com.green.eats.auth.application.model.UserSigninReq;
 import com.green.eats.auth.application.model.UserSigninRes;
 import com.green.eats.auth.application.model.UserSignupReq;
+import com.green.eats.auth.application.model.UserUpdateReq;
 import com.green.eats.auth.entity.User;
 import com.green.eats.common.model.JwtUser;
 import com.green.eats.common.model.ResultResponse;
+import com.green.eats.common.model.UserPrincipal;
 import com.green.eats.common.security.JwtTokenManager;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.*;
 
 @Slf4j
 @RestController
@@ -49,6 +49,18 @@ public class UserController {
         return ResultResponse.builder()
                 .resultMessage("로그인 성공")
                 .resultData( userSigninRes ) // userSigninRes 내용을 그대로 넣어도 됨
+                .build();
+    }
+
+    @PatchMapping("/update")
+    public ResultResponse<?> update(@RequestHeader("X-User-Id") Long id,
+                                    @RequestBody UserUpdateReq req){
+        log.info("signedUser: {}", req);
+        userService.update(id, req);
+
+        return ResultResponse.builder()
+                .resultMessage("수정 성공")
+                .resultData( req ) // userSigninRes 내용을 그대로 넣어도 됨
                 .build();
     }
 }

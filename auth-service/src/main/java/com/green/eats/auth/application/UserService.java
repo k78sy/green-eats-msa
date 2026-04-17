@@ -12,6 +12,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.Optional;
@@ -46,18 +47,8 @@ public class UserService {
                 .build();
 
         // 카프카..에게  이 통신의 이름.unique.보내는값 담아 콜백 함수
-        kafkaTemplate.send("user-topic", String.valueOf(newUser.getId()), userEvent)
-                .whenComplete((result, ex) -> {
-                    if (ex == null) {
-                        // 성공 시 로그
-                        log.info("✅ [Kafka Success] Topic: {}, Offset: {}",
-                                result.getRecordMetadata().topic(),
-                                result.getRecordMetadata().offset());
-                    } else {
-                        // 실패 시 로그
-                        log.error("❌ [Kafka Failure] 원인: {}", ex.getMessage());
-                    }
-                });
+        kafkaTemplate(newUser, userEvent);
+
     }
 
     public User signin(UserSigninReq req){
@@ -74,10 +65,11 @@ public class UserService {
         throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "아이디, 비밀번호를 확인해 주세요.");
     }
 
-
-    public void update(Long id, UserUpdateReq req){
-        User res = userRepository.findById( id ).orElseThrow();
-        res.setName(req.getName());
+    @Transactional
+    public void update(Long userId, UserUpdateReq req){
+        User res = userRepository.findById( userId ).orElseThrow();
+        res.setName( req.getName() );
+        res.setAddress( req.getAddress() );
         userRepository.save( res );
 
         UserEvent userEvent = UserEvent.builder()
@@ -86,7 +78,12 @@ public class UserService {
                 .eventType( UserEventType.UPDATE )
                 .build();
 
-        kafkaTemplate.send("user-topic", String.valueOf(res.getId()), userEvent)
+        kafkaTemplate(res, userEvent);
+    }
+
+    private void kafkaTemplate(User user, UserEvent userEvent){
+
+        kafkaTemplate.send("user-topic", String.valueOf(user.getId()), userEvent)
                 .whenComplete((result, ex) -> {
                     if (ex == null) {
                         // 성공 시 로그
@@ -98,5 +95,6 @@ public class UserService {
                         log.error("❌ [Kafka Failure] 원인: {}", ex.getMessage());
                     }
                 });
+
     }
 }

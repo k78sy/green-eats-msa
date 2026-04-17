@@ -22,7 +22,7 @@ public class StoreController {
 
     @GetMapping("/menu")
     public ResultResponse<?> getAllMenus(){
-        UserDto userDto = UserContext.get(); // 토큰에서 로그인 유저의 정보를 가져오는거...
+        UserDto userDto = UserContext.get(); // 토큰에서 로그인 유저 정보 담기
         log.info("userDto: {}", userDto);
 
         List<MenuGetRes> menus = storeService.getAllMenus();

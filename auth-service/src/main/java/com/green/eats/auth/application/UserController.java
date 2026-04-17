@@ -5,11 +5,14 @@ import com.green.eats.auth.application.model.UserSigninRes;
 import com.green.eats.auth.application.model.UserSignupReq;
 import com.green.eats.auth.application.model.UserUpdateReq;
 import com.green.eats.auth.entity.User;
+import com.green.eats.common.auth.UserContext;
 import com.green.eats.common.model.JwtUser;
 import com.green.eats.common.model.ResultResponse;
+import com.green.eats.common.model.UserDto;
 import com.green.eats.common.model.UserPrincipal;
 import com.green.eats.common.security.JwtTokenManager;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -52,10 +55,12 @@ public class UserController {
                 .build();
     }
 
-    @PatchMapping("/update")
-    public ResultResponse<?> update(@RequestHeader("X-User-Id") Long id,
-                                    @RequestBody UserUpdateReq req){
-        log.info("signedUser: {}", req);
+    @PutMapping
+    public ResultResponse<?> update(@Valid @RequestBody UserUpdateReq req){
+        UserDto userDto = UserContext.get(); // 토큰에서 로그인 유저의 정보를 가져오는거...
+
+        Long id = userDto.id();
+        log.info("signedUserId: {}", id);
         userService.update(id, req);
 
         return ResultResponse.builder()

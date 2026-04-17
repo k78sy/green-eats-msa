@@ -10,7 +10,7 @@ import org.springframework.web.servlet.HandlerInterceptor;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 
-@Component
+@Component // common에서 이렇게 하면.. auth에서도 빈등록, store에서도 빈등록
 public class UserContextInterceptor implements HandlerInterceptor {
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) {

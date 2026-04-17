@@ -36,21 +36,21 @@ public class TokenAuthenticationFilter extends OncePerRequestFilter {
         log.info("req-uri: {}", request.getRequestURI()); //요청 주소가 로그에 출력
 
         //쿠키에 AT가 없었다. null 리턴
-        //쿠키에 AT가 있었다 주소값이 넘어온다.
+        //쿠키에 AT가 있었다 주소값이 넘어온다. = 로그인 상태라는 말
         Authentication authentication = jwtTokenManager.getAuthentication(request);
         log.info("authentication: {}", authentication);
 
         HttpServletRequest requestToUse = request;
 
         try {
-            if (authentication != null) {  //로그인 상태
-                SecurityContextHolder.getContext().setAuthentication(authentication); //시큐리티 인증처리가 완료!!
+            if (authentication != null) {  //쿠키가 있는거. 로그인 상태
+                SecurityContextHolder.getContext().setAuthentication(authentication); //시큐리티 인증처리가 완료!! WebSecurityConfiguration 관련된 거 처리
 
                 // 인증 정보가 있는 경우 헤더를 추가하기 위해 요청을 감쌉니다.
                 if (authentication.getPrincipal() instanceof UserPrincipal userPrincipal) {
                     JwtUser jwtUser = userPrincipal.getJwtUser();
                     log.info("========================= jwtUser: {}", jwtUser);
-                    String encodedUserName = URLEncoder.encode(jwtUser.getName(), StandardCharsets.UTF_8);
+                    String encodedUserName = URLEncoder.encode(jwtUser.getName(), StandardCharsets.UTF_8); // 한글을 UTF-8로 인코딩
 
                     requestToUse = new HttpServletRequestWrapper(request) {
                         @Override

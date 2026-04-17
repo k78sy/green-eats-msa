@@ -32,4 +32,7 @@ public class User extends CreatedUpdatedAt {
 
     @Column(nullable = false, length = 2)
     private EnumUserRole enumUserRole;
+
+    @Column(nullable = false)
+    private Boolean isDel;
 }

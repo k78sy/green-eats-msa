@@ -65,7 +65,21 @@ public class UserController {
 
         return ResultResponse.builder()
                 .resultMessage("수정 성공")
-                .resultData( req ) // userSigninRes 내용을 그대로 넣어도 됨
+                .resultData( req )
+                .build();
+    }
+
+    @DeleteMapping
+    public ResultResponse<?> delete(){
+        UserDto userDto = UserContext.get();
+        Long signedUserId = userDto.id();
+        log.info("signedUserId: {}", signedUserId);
+
+        userService.delete(signedUserId);
+
+        return ResultResponse.builder()
+                .resultMessage("탈퇴 완료")
+                .resultData( signedUserId )
                 .build();
     }
 }

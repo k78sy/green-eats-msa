@@ -35,6 +35,7 @@ public class UserService {
         newUser.setPassword( hashedPw );
         newUser.setName( req.getName() );
         newUser.setAddress( req.getAddress() );
+        newUser.setIsDel( false );
         newUser.setEnumUserRole( req.getUserRole() );
 
         userRepository.save(newUser);
@@ -80,6 +81,23 @@ public class UserService {
 
         kafkaTemplate(res, userEvent);
     }
+
+    @Transactional
+    public void delete(Long signedUserId){
+        User res = userRepository.findById( signedUserId ).orElseThrow();
+        res.setIsDel( true );
+        userRepository.save( res );
+
+        UserEvent userEvent = UserEvent.builder()
+                .userId( res.getId() )
+                .name( res.getName() )
+                .eventType( UserEventType.DELETE )
+                .build();
+
+        kafkaTemplate(res, userEvent);
+    }
+
+
 
     private void kafkaTemplate(User user, UserEvent userEvent){
 

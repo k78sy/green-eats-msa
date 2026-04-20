@@ -1,5 +1,7 @@
 package com.green.eats.store.entity;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.green.eats.store.application.model.MenuPostReq;
 import com.green.eats.store.enumcode.EnumMenuCategory;
 import io.hypersistence.utils.hibernate.id.Tsid;
 import jakarta.persistence.Column;
@@ -12,9 +14,9 @@ import lombok.Setter;
 @Entity
 @Getter
 @Setter
+@NoArgsConstructor
 public class Menu {
-    @Id
-    @Tsid // Auto Increment 처럼 자동으로 아이디 생성
+    @Id @Tsid
     private Long id;
 
     @Column(nullable = false, length = 255)
@@ -27,7 +29,15 @@ public class Menu {
     private Integer stockQuantity;
 
     @Column(nullable = false, name="cd_category")
+    @JsonProperty("menuCategory")
     private EnumMenuCategory enumMenuCategory;
+
+    public Menu(MenuPostReq req) {
+        this.name = req.getName();
+        this.price = req.getPrice();
+        this.stockQuantity = req.getStockQuantity();
+        this.enumMenuCategory = req.getMenuCategory();
+    }
 
     public void removeStock(int quantity) {
         int restStock = this.stockQuantity - quantity;
@@ -36,5 +46,4 @@ public class Menu {
         }
         this.stockQuantity = restStock;
     }
-
 }

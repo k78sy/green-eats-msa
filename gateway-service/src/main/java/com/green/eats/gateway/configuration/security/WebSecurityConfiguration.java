@@ -36,7 +36,7 @@ public class WebSecurityConfiguration {
                         // ///////////// 로그인 해야만 가능
                         .requestMatchers("/api/order/**").authenticated()
                         // -------- 로그인한 유저가 특정 권한이 있어야 가능
-                        .requestMatchers("/api/store/menu").hasRole(EnumUserRole.ADMIN.name())
+//                        .requestMatchers("/api/store/menu").hasRole(EnumUserRole.ADMIN.name())
                         //  ////////////그외는 모두 허용
                         .anyRequest().permitAll()
                 )

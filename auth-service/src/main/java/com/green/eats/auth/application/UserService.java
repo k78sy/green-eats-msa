@@ -4,7 +4,9 @@ import com.green.eats.auth.application.model.UserSigninReq;
 import com.green.eats.auth.application.model.UserSignupReq;
 import com.green.eats.auth.application.model.UserUpdateReq;
 import com.green.eats.auth.entity.User;
+import com.green.eats.auth.exception.UserErrorCode;
 import com.green.eats.common.constants.UserEventType;
+import com.green.eats.common.exception.BusinessException;
 import com.green.eats.common.model.UserEvent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -57,13 +59,13 @@ public class UserService {
         log.info("signedUser: {}", signedUser);
 
         if(signedUser == null || !passwordEncoder.matches( req.getPassword(), signedUser.getPassword() ) ){
-            noFoundUser();
+            notFoundUserAndNotMatchedPassword();
         }
         return signedUser;
     }
 
-    private void noFoundUser(){
-        throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "아이디, 비밀번호를 확인해 주세요.");
+    private void notFoundUserAndNotMatchedPassword() {
+        throw new BusinessException(UserErrorCode.CHECK_EMAIL_PASSWORD);
     }
 
     @Transactional

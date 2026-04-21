@@ -17,7 +17,7 @@ public class UserEventConsumer {
     private final UserCacheRepository userCacheRepository;
 
     @Transactional
-    @KafkaListener(topics = "user-topic", groupId = "order-group")
+    @KafkaListener(topics = "user-topic")
     public void consume(UserEvent event) {
         log.info("📢 Kafka 메시지 수신됨: {}", event);
 

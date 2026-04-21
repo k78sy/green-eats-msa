@@ -1,5 +1,6 @@
 package com.green.eats.order.entity;
 
+import com.green.eats.order.enumcode.EnumOrderStatus;
 import io.hypersistence.utils.hibernate.id.Tsid;
 import jakarta.persistence.*;
 import lombok.*;
@@ -18,8 +19,8 @@ public class Order {
 
     private Long totalAmount;
 
-    @Enumerated(EnumType.STRING)
-    private OrderStatus status;
+    @Column(length = 2)
+    private EnumOrderStatus status;
 
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL)
     private List<OrderItem> items = new ArrayList<>();
@@ -28,13 +29,11 @@ public class Order {
     public Order(Long userId, Long totalAmount) {
         this.userId = userId;
         this.totalAmount = totalAmount;
-        this.status = OrderStatus.PENDING;
+        this.status = EnumOrderStatus.COMPLETED;
     }
 
     public void addOrderItem(OrderItem item) {
         this.items.add(item);
         item.setOrder(this);
     }
-
-    public enum OrderStatus { PENDING, COMPLETED, CANCELLED }
 }

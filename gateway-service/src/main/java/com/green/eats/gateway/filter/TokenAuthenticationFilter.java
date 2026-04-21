@@ -1,4 +1,4 @@
-package com.green.eats.gateway.configuration.filter;
+package com.green.eats.gateway.filter;
 
 import com.green.eats.common.model.JwtUser;
 import com.green.eats.common.model.UserPrincipal;

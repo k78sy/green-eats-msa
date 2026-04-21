@@ -1,4 +1,4 @@
-package com.green.eats.gateway.configuration.security;
+package com.green.eats.gateway.security;
 
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;

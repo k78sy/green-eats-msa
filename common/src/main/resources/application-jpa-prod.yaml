@@ -1,4 +1,9 @@
 # prod가 붙은 yaml은 서버에서 작동가능하고 git 관리에 포함
+constants:
+  exception:
+    common-handler:
+      enabled: true
+
 spring:
   jpa:
     database: mysql

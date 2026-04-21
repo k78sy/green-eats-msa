@@ -1,7 +1,6 @@
-package com.green.eats.gateway.configuration.security;
+package com.green.eats.gateway.security;
 
-import com.green.eats.common.model.EnumUserRole;
-import com.green.eats.gateway.configuration.filter.TokenAuthenticationFilter;
+import com.green.eats.gateway.filter.TokenAuthenticationFilter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Bean;
@@ -51,7 +50,7 @@ public class WebSecurityConfiguration {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
-        config.setAllowedOrigins(List.of("http://localhost:5173")); // 개발때만 이렇게 쓸거고요...
+        config.setAllowedOrigins(List.of("http://localhost:5173", "http://localhost:5174")); // 개발때만 이렇게 쓸거고요...
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(List.of("*"));
         config.setAllowCredentials(true);

@@ -1,6 +1,7 @@
 package com.green.eats.store.application;
 
 import com.green.eats.common.auth.UserContext;
+import com.green.eats.common.model.MenuGetClientRes;
 import com.green.eats.common.model.ResultResponse;
 import com.green.eats.common.model.UserDto;
 import com.green.eats.store.application.model.MenuGetRes;
@@ -13,6 +14,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @Slf4j
 @RestController
@@ -39,5 +41,11 @@ public class StoreController {
                 .resultMessage( String.format("%d rows", menus.size()) )
                 .resultData( menus )
                 .build();
+    }
+
+    @GetMapping("/menu/list")
+    public Map<Long, MenuGetClientRes> getAllMenus(@RequestParam List<Long> menuIds) {
+        log.info("menuIds: {}, size: {}", menuIds, menuIds.size());
+        return storeService.getMenuListByIds(menuIds);
     }
 }

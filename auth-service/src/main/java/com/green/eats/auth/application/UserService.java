@@ -1,23 +1,23 @@
 package com.green.eats.auth.application;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.green.eats.auth.application.model.UserPutReq;
 import com.green.eats.auth.application.model.UserSigninReq;
 import com.green.eats.auth.application.model.UserSignupReq;
-import com.green.eats.auth.application.model.UserUpdateReq;
 import com.green.eats.auth.entity.User;
 import com.green.eats.auth.exception.UserErrorCode;
 import com.green.eats.common.constants.UserEventType;
 import com.green.eats.common.exception.BusinessException;
 import com.green.eats.common.model.UserEvent;
+import com.green.eats.common.outbox.Outbox;
+import com.green.eats.common.outbox.OutboxRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.HttpStatus;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.server.ResponseStatusException;
-
-import java.util.Optional;
+import tools.jackson.databind.ObjectMapper;
 
 @Slf4j
 @Service
@@ -26,95 +26,99 @@ public class UserService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final KafkaTemplate<String, Object> kafkaTemplate;
+    private final OutboxRepository outboxRepository;
+    private final ObjectMapper objectMapper;
 
+    @Transactional
     public void signup(UserSignupReq req) {
-        // 비밀번호 암호화
-        String hashedPw = passwordEncoder.encode( req.getPassword() );
+        String hashedPassword = passwordEncoder.encode(req.getPassword());
 
-        //회원가입시켜주세요
+        //회원가입 시켜주세요. 제발~
         User newUser = new User();
         newUser.setEmail( req.getEmail() );
-        newUser.setPassword( hashedPw );
+        newUser.setPassword( hashedPassword );
         newUser.setName( req.getName() );
         newUser.setAddress( req.getAddress() );
-        newUser.setIsDel( false );
         newUser.setEnumUserRole( req.getUserRole() );
+        newUser.setIsDel( false );
 
         userRepository.save(newUser);
 
-        // 카프카(집배원)에게 신호를 보내는 셈...
         UserEvent userEvent = UserEvent.builder()
                 .userId( newUser.getId() )
                 .name( newUser.getName() )
-                .eventType( UserEventType.CREATE )
+                .eventType( UserEventType.USER_CREATED)
                 .build();
 
-        // 카프카..에게  이 통신의 이름.unique.보내는값 담아 콜백 함수
-        kafkaTemplate(newUser, userEvent);
-
+        kafkaSend(userEvent);
     }
 
-    public User signin(UserSigninReq req){
+    public User signin(UserSigninReq req) {
         User signedUser = userRepository.findByEmail( req.getEmail() );
         log.info("signedUser: {}", signedUser);
-
-        if(signedUser == null || !passwordEncoder.matches( req.getPassword(), signedUser.getPassword() ) ){
+        if(signedUser == null || !passwordEncoder.matches( req.getPassword(), signedUser.getPassword() )) {
             notFoundUserAndNotMatchedPassword();
         }
         return signedUser;
     }
 
+    @Transactional
+    public void updUser(Long userId, UserPutReq req) {
+        User user = userRepository.findById(userId).orElseThrow();
+
+        user.setName( req.getName() );
+        user.setAddress( req.getAddress() );
+
+        UserEvent userEvent = UserEvent.builder()
+                .userId( user.getId() )
+                .name( user.getName() )
+                .eventType( UserEventType.USER_UPDATED)
+                .build();
+
+        kafkaSend(userEvent);
+    }
+
+    @Transactional
+    public void delUser(Long userId) {
+        User user = userRepository.findById(userId).orElseThrow();
+        user.setIsDel( true );
+
+        UserEvent userEvent = UserEvent.builder()
+                .userId( user.getId() )
+                .name( user.getName() )
+                .eventType( UserEventType.USER_DELETED)
+                .build();
+
+        kafkaSend(userEvent);
+    }
+
+    private void kafkaSend(UserEvent userEvent) {
+        String payload = objectMapper.writeValueAsString(userEvent);
+        Outbox outbox = Outbox.builder()
+                .topic("user-topic")
+                .aggregateId( userEvent.getUserId() )
+                .eventType( userEvent.getEventType().name() )
+                .payload( payload )
+                .build();
+
+        outboxRepository.save(outbox);
+
+//        kafkaTemplate.send("user-topic", String.valueOf(userEvent.getUserId()), userEvent)
+//                .whenComplete((result, ex) -> {
+//                    if (ex == null) {
+//                        // 성공 시 로그
+//                        log.info("✅ [Kafka Success] Topic: {}, Offset: {}",
+//                                result.getRecordMetadata().topic(),
+//                                result.getRecordMetadata().offset());
+//                    } else {
+//                        // 실패 시 로그
+//                        log.error("❌ [Kafka Failure] 원인: {}", ex.getMessage());
+//                    }
+//                });
+    }
+
     private void notFoundUserAndNotMatchedPassword() {
-        throw new BusinessException(UserErrorCode.CHECK_EMAIL_PASSWORD);
-    }
-
-    @Transactional
-    public void update(Long userId, UserUpdateReq req){
-        User res = userRepository.findById( userId ).orElseThrow();
-        res.setName( req.getName() );
-        res.setAddress( req.getAddress() );
-        userRepository.save( res );
-
-        UserEvent userEvent = UserEvent.builder()
-                .userId( res.getId() )
-                .name( res.getName() )
-                .eventType( UserEventType.UPDATE )
-                .build();
-
-        kafkaTemplate(res, userEvent);
-    }
-
-    @Transactional
-    public void delete(Long signedUserId){
-        User res = userRepository.findById( signedUserId ).orElseThrow();
-        res.setIsDel( true );
-        userRepository.save( res );
-
-        UserEvent userEvent = UserEvent.builder()
-                .userId( res.getId() )
-                .name( res.getName() )
-                .eventType( UserEventType.DELETE )
-                .build();
-
-        kafkaTemplate(res, userEvent);
-    }
-
-
-
-    private void kafkaTemplate(User user, UserEvent userEvent){
-
-        kafkaTemplate.send("user-topic", String.valueOf(user.getId()), userEvent)
-                .whenComplete((result, ex) -> {
-                    if (ex == null) {
-                        // 성공 시 로그
-                        log.info("✅ [Kafka Success] Topic: {}, Offset: {}",
-                                result.getRecordMetadata().topic(),
-                                result.getRecordMetadata().offset());
-                    } else {
-                        // 실패 시 로그
-                        log.error("❌ [Kafka Failure] 원인: {}", ex.getMessage());
-                    }
-                });
-
+        //throw new BusinessException(UserErrorCode.CHECK_EMAIL_PASSWORD);
+        throw BusinessException.of(UserErrorCode.CHECK_EMAIL_PASSWORD);
     }
 }
